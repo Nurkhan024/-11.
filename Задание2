@@ -1,0 +1,152 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+public class Book
+{
+    public string Title { get; set; }
+    public string Author { get; set; }
+    public string Genre { get; set; }
+    public string ISBN { get; set; }
+
+    public Book(string title, string author, string genre, string isbn)
+    {
+        Title = title;
+        Author = author;
+        Genre = genre;
+        ISBN = isbn;
+    }
+
+    public override string ToString()
+    {
+        return $"Название: {Title}, Автор: {Author}, Жанр: {Genre}, ISBN: {ISBN}";
+    }
+}
+
+public class Reader
+{
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
+    public string TicketNumber { get; set; }
+
+    public Reader(string firstName, string lastName, string ticketNumber)
+    {
+        FirstName = firstName;
+        LastName = lastName;
+        TicketNumber = ticketNumber;
+    }
+
+    public void BorrowBook(Book book)
+    {
+        Console.WriteLine($"{FirstName} {LastName} взял книгу: {book.Title}");
+    }
+
+    public void ReturnBook(Book book)
+    {
+        Console.WriteLine($"{FirstName} {LastName} вернул книгу: {book.Title}");
+    }
+}
+
+public class Librarian
+{
+    private readonly IAccountingSystem _accountingSystem;
+
+    public Librarian(IAccountingSystem accountingSystem)
+    {
+        _accountingSystem = accountingSystem;
+    }
+
+    public void IssueBook(Book book, Reader reader)
+    {
+        _accountingSystem.RecordIssue(book, reader);
+        reader.BorrowBook(book);
+    }
+
+    public void ReturnBook(Book book, Reader reader)
+    {
+        _accountingSystem.RecordReturn(book, reader);
+        reader.ReturnBook(book);
+    }
+}
+
+public class Catalog
+{
+    private List<Book> _books;
+
+    public Catalog()
+    {
+        _books = new List<Book>();
+    }
+
+    public void AddBook(Book book)
+    {
+        _books.Add(book);
+    }
+
+    public Book SearchBookByTitle(string title)
+    {
+        return _books.FirstOrDefault(b => b.Title.Contains(title, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public List<Book> SearchBooksByAuthor(string author)
+    {
+        return _books.Where(b => b.Author.Contains(author, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    public List<Book> SearchBooksByGenre(string genre)
+    {
+        return _books.Where(b => b.Genre.Contains(genre, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+}
+
+public interface IAccountingSystem
+{
+    void RecordIssue(Book book, Reader reader);
+    void RecordReturn(Book book, Reader reader);
+}
+
+public class AccountingSystem : IAccountingSystem
+{
+    public void RecordIssue(Book book, Reader reader)
+    {
+        Console.WriteLine($"Запись о выдаче: {reader.FirstName} {reader.LastName} взял книгу {book.Title}");
+    }
+
+    public void RecordReturn(Book book, Reader reader)
+    {
+        Console.WriteLine($"Запись о возврате: {reader.FirstName} {reader.LastName} вернул книгу {book.Title}");
+    }
+}
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var catalog = new Catalog();
+        var accountingSystem = new AccountingSystem();
+        var librarian = new Librarian(accountingSystem);
+
+        var book1 = new Book("1984", "Джордж Оруэлл", "Дистопия", "123456789");
+        var book2 = new Book("Мастер и Маргарита", "Михаил Булгаков", "Роман", "987654321");
+        catalog.AddBook(book1);
+        catalog.AddBook(book2);
+
+        var reader = new Reader("Алдияров", "Асылжан", "12345");
+
+        var foundBook = catalog.SearchBookByTitle("1984");
+        if (foundBook != null)
+        {
+            Console.WriteLine($"Книга найдена: {foundBook}");
+        }
+        else
+        {
+            Console.WriteLine("Книга не найдена.");
+        }
+
+        librarian.IssueBook(book1, reader);
+
+        librarian.ReturnBook(book1, reader);
+
+        Console.ReadLine();
+    }
+}
