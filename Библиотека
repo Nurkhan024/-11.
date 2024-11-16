@@ -1,0 +1,232 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+public abstract class User
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public string Email { get; set; }
+    public string UserType { get; set; }
+
+    public abstract void Register();
+    public abstract void Login();
+}
+
+public class Reader : User
+{
+    public List<Book> BorrowedBooks { get; set; } = new List<Book>();
+
+    public override void Register()
+    {
+        Console.WriteLine($"Читатель {Name} зарегистрирован.");
+    }
+
+    public override void Login()
+    {
+        Console.WriteLine($"Читатель {Name} вошел в систему.");
+    }
+
+    public void BorrowBook(Book book)
+    {
+        if (book.AvailabilityStatus == "Доступна")
+        {
+            BorrowedBooks.Add(book);
+            book.ChangeAvailabilityStatus("Занята");
+            Console.WriteLine($"Книга {book.Title} взята.");
+        }
+        else
+        {
+            Console.WriteLine($"Книга {book.Title} недоступна.");
+        }
+    }
+
+    public void ReturnBook(Book book)
+    {
+        if (BorrowedBooks.Contains(book))
+        {
+            BorrowedBooks.Remove(book);
+            book.ChangeAvailabilityStatus("Доступна");
+            Console.WriteLine($"Книга {book.Title} возвращена.");
+        }
+        else
+        {
+            Console.WriteLine($"Вы не брали книгу {book.Title}.");
+        }
+    }
+}
+
+public class Librarian : User
+{
+    public override void Register()
+    {
+        Console.WriteLine($"Библиотекарь {Name} зарегистрирован.");
+    }
+
+    public override void Login()
+    {
+        Console.WriteLine($"Библиотекарь {Name} вошел в систему.");
+    }
+
+    public void AddBook(Book book, Library library)
+    {
+        library.AddBook(book);
+        Console.WriteLine($"Книга {book.Title} добавлена в библиотеку.");
+    }
+
+    public void RemoveBook(Book book, Library library)
+    {
+        library.RemoveBook(book);
+        Console.WriteLine($"Книга {book.Title} удалена из библиотеки.");
+    }
+
+    public void EditBook(Book book)
+    {
+        book.ChangeAvailabilityStatus("Доступна");
+        Console.WriteLine($"Книга {book.Title} отредактирована.");
+    }
+}
+
+public class Book
+{
+    public string Title { get; set; }
+    public string ISBN { get; set; }
+    public List<Author> Authors { get; set; }
+    public int PublicationYear { get; set; }
+    public string AvailabilityStatus { get; set; } = "Доступна";
+
+    public void ChangeAvailabilityStatus(string status)
+    {
+        AvailabilityStatus = status;
+    }
+
+    public string GetBookInfo()
+    {
+        return $"{Title} - {ISBN} - {AvailabilityStatus}";
+    }
+}
+
+public class Loan
+{
+    public Book Book { get; set; }
+    public Reader Reader { get; set; }
+    public DateTime LoanDate { get; set; }
+    public DateTime ReturnDate { get; set; }
+
+    public Loan(Book book, Reader reader)
+    {
+        Book = book;
+        Reader = reader;
+        LoanDate = DateTime.Now;
+        ReturnDate = LoanDate.AddDays(14); // По умолчанию выдача на 2 недели
+    }
+
+    public void IssueLoan()
+    {
+        Console.WriteLine($"Книга {Book.Title} выдана {Reader.Name}. Возврат до {ReturnDate.ToShortDateString()}.");
+    }
+
+    public void ReturnBook()
+    {
+        Console.WriteLine($"Книга {Book.Title} возвращена {Reader.Name}. Спасибо!");
+    }
+}
+
+public class Library
+{
+    public List<Book> Books { get; set; } = new List<Book>();
+    public List<User> Users { get; set; } = new List<User>();
+    public List<Loan> Loans { get; set; } = new List<Loan>();
+
+    public void AddBook(Book book)
+    {
+        Books.Add(book);
+    }
+
+    public void RemoveBook(Book book)
+    {
+        Books.Remove(book);
+    }
+
+    public void RegisterUser(User user)
+    {
+        Users.Add(user);
+    }
+
+    public Book SearchBook(string title)
+    {
+        return Books.FirstOrDefault(b => b.Title.Equals(title, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public void GenerateReport()
+    {
+        Console.WriteLine("\n--- Отчет о библиотеке ---");
+        foreach (var book in Books)
+        {
+            Console.WriteLine($"Книга: {book.Title}, Статус: {book.AvailabilityStatus}");
+        }
+    }
+}
+
+public class Author
+{
+    public string Name { get; set; }
+    public string Biography { get; set; }
+
+    public string GetAuthorInfo()
+    {
+        return $"{Name}: {Biography}";
+    }
+}
+
+public class Report
+{
+    public void GenerateBookPopularityReport(Library library)
+    {
+        Console.WriteLine("\n--- Отчет о популярности книг ---");
+        foreach (var book in library.Books)
+        {
+            Console.WriteLine($"{book.Title}: {book.AvailabilityStatus}");
+        }
+    }
+
+    public void GenerateReaderActivityReport(Library library)
+    {
+        Console.WriteLine("\n--- Отчет о активности читателей ---");
+        foreach (var user in library.Users.OfType<Reader>())
+        {
+            Console.WriteLine($"{user.Name}: Взято {user.BorrowedBooks.Count} книг.");
+        }
+    }
+}
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        Library library = new Library();
+        
+        Librarian librarian = new Librarian { Id = 1, Name = "Нурбек", UserType = "Библиотекарь" };
+        Reader reader = new Reader { Id = 2, Name = "Диана", UserType = "Читатель" };
+
+        librarian.Register();
+        reader.Register();
+
+        Author author = new Author { Name = "Дж.К. Роулинг", Biography = "Британская писательница" };
+        Book book1 = new Book { Title = "Гарри Поттер", ISBN = "123-456-789", Authors = new List<Author> { author }, PublicationYear = 1997 };
+        Book book2 = new Book { Title = "Хоббит", ISBN = "987-654-321", Authors = new List<Author> { author }, PublicationYear = 1937 };
+
+        librarian.AddBook(book1, library);
+        librarian.AddBook(book2, library);
+
+        library.GenerateReport();
+
+        reader.BorrowBook(book1);
+
+        library.GenerateReport();
+
+        reader.ReturnBook(book1);
+
+        library.GenerateReport();
+    }
+}
